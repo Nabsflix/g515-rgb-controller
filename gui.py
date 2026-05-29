@@ -20,7 +20,7 @@ from PIL import Image, ImageDraw
 from bridge import LogitechLED, ChromaBridge, LOGITECH_KEY_MAP, load_preset, save_preset
 
 AUTOSTART_NAME = "G515 RGB Controller"
-AUTOSTART_CMD  = f'"{sys.executable}" "{Path(__file__).resolve()}"'
+AUTOSTART_CMD  = f'"{Path(sys.executable).parent / "pythonw.exe"}" "{Path(__file__).resolve()}"'
 
 # ── Layout clavier AZERTY G515 TKL ───────────────────────────────────────────
 
