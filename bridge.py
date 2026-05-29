@@ -247,13 +247,20 @@ RAZER_TO_LOGITECH_SCAN = {
 }
 
 
+def _hsv_to_rgb(h, s, v):
+    import colorsys
+    r, g, b = colorsys.hsv_to_rgb(h, s, v)
+    return int(r * 255), int(g * 255), int(b * 255)
+
+
 class ChromaBridge:
     def __init__(self):
         self.session_url = None
         self.heartbeat_thread = None
-        self.running = False
+        self.running = True
         self.logi = LogitechLED()
         self._current_effect = None
+        self._effect_thread = None
         self._base_color = (0, 0, 0)  # couleur de fond actuelle
 
     def connect(self) -> bool:
@@ -346,22 +353,86 @@ class ChromaBridge:
         self._current_effect = ("custom", key_colors)
         print(f"[Bridge] Personnalisé appliqué : {len(key_colors)} touches")
 
+    def _stop_effect(self):
+        """Arrête tout effet en cours."""
+        self.running = False
+        if self._effect_thread and self._effect_thread.is_alive():
+            self._effect_thread.join(timeout=1)
+        self.running = True
+
     def apply_breathing(self, r: int, g: int, b: int):
-        """Effet respiratoire."""
-        color = (b << 16) | (g << 8) | r
-        payload = {
-            "effect": "CHROMA_BREATHING",
-            "param": {"type": 1, "color": color}
-        }
-        if self.session_url:
-            requests.put(f"{self.session_url}/keyboard", json=payload, timeout=3)
+        """Effet respiratoire natif Logitech."""
+        self._stop_effect()
+
+        def _run():
+            import math
+            step = 0
+            while self.running and self._current_effect == "breathing":
+                brightness = (math.sin(step * 0.05) + 1) / 2
+                self.logi.set_all(
+                    int(r / 255 * 100 * brightness),
+                    int(g / 255 * 100 * brightness),
+                    int(b / 255 * 100 * brightness)
+                )
+                step += 1
+                time.sleep(0.03)
+
+        self._current_effect = "breathing"
+        self._effect_thread = threading.Thread(target=_run, daemon=True)
+        self._effect_thread.start()
         print(f"[Bridge] Breathing : RGB({r},{g},{b})")
 
     def apply_wave(self, direction: int = 1):
-        """Effet vague (1=gauche→droite, 2=droite→gauche)."""
-        payload = {"effect": "CHROMA_WAVE", "param": {"direction": direction}}
-        if self.session_url:
-            requests.put(f"{self.session_url}/keyboard", json=payload, timeout=3)
+        """Effet vague natif Logitech (gauche→droite ou droite→gauche)."""
+        self._stop_effect()
+
+        # Colonnes de touches ordonnées de gauche à droite (scan codes)
+        COLUMNS = [
+            [0x01],                              # ESC
+            [0x3B, 0x02, 0x0F, 0x3A, 0x2A, 0x1D],  # F1, 1, Tab, Caps, LShift, LCtrl
+            [0x3C, 0x03, 0x10, 0x1E, 0x56, 0x5B],  # F2, 2, A, Q, !, Win
+            [0x3D, 0x04, 0x11, 0x1F, 0x2C, 0x38],  # F3, 3, Z, S, W, Alt
+            [0x3E, 0x05, 0x12, 0x20, 0x2D],         # F4, 4, E, D, X
+            [0x3F, 0x06, 0x13, 0x21, 0x2E],         # F5, 5, R, F, C
+            [0x40, 0x07, 0x14, 0x22, 0x2F],         # F6, 6, T, G, V
+            [0x41, 0x08, 0x15, 0x23, 0x30],         # F7, 7, Y, H, B
+            [0x42, 0x09, 0x16, 0x24, 0x31],         # F8, 8, U, J, N
+            [0x43, 0x0A, 0x17, 0x25, 0x32],         # F9, 9, I, K, M
+            [0x44, 0x0B, 0x18, 0x26, 0x33],         # F10, 0, O, L, ,
+            [0x57, 0x0C, 0x19, 0x27, 0x34],         # F11, -, P, M, ;
+            [0x58, 0x0D, 0x1A, 0x28, 0x35],         # F12, =, [, ', :
+            [0x0E, 0x1B, 0x2B, 0x1C, 0x36],         # Backspace, ], \, Enter, RShift
+            [0x37, 0x52, 0x53],                      # Print, Insert, Delete
+            [0x46, 0x47, 0x4F],                      # Scroll, Home, End
+            [0x45, 0x49, 0x51],                      # Pause, PgUp, PgDn
+            [0x48],                                  # Up
+            [0x4B, 0x50, 0x4D],                      # Left, Down, Right
+        ]
+
+        cols = COLUMNS if direction == 1 else list(reversed(COLUMNS))
+        n = len(cols)
+
+        def _run():
+            offset = 0
+            while self.running and self._current_effect == "wave":
+                for ci, col_scans in enumerate(cols):
+                    idx = (ci - offset) % n
+                    # Couleur arc-en-ciel basée sur position
+                    hue = idx / n
+                    r2, g2, b2 = _hsv_to_rgb(hue, 1.0, 1.0)
+                    for scan in col_scans:
+                        self.logi.set_key_by_scan(
+                            scan,
+                            int(r2 / 255 * 100),
+                            int(g2 / 255 * 100),
+                            int(b2 / 255 * 100)
+                        )
+                offset = (offset + 1) % n
+                time.sleep(0.05)
+
+        self._current_effect = "wave"
+        self._effect_thread = threading.Thread(target=_run, daemon=True)
+        self._effect_thread.start()
         print(f"[Bridge] Wave direction={direction}")
 
 

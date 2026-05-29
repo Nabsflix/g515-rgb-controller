@@ -37,7 +37,7 @@ ROW0 = [
     ("F5", "F5", 1), ("F6", "F6", 1), ("F7", "F7", 1), ("F8", "F8", 1),
     ("GAP", None, 0.5),
     ("F9", "F9", 1), ("F10", "F10", 1), ("F11", "F11", 1), ("F12", "F12", 1),
-    ("GAP", None, 0.5),
+    ("GAP", None, 1.0),
     ("Impr", "PRINT_SCREEN", 1), ("Arrêt\nDéf", "SCROLL_LOCK", 1), ("Pause", "PAUSE_BREAK", 1),
 ]
 
@@ -431,6 +431,7 @@ class BridgeApp(tk.Tk):
         self._set_status(f"Favori {idx+1} sauvegardé")
 
     def _apply_current(self):
+        self.bridge._current_effect = None  # stoppe tout effet animé en cours
         br, bg_, bb = self._apply_brightness(*self.base_color)
         self.bridge._base_color = (br, bg_, bb)
         self.bridge.apply_static(br, bg_, bb)
