@@ -22,6 +22,12 @@ from bridge import LogitechLED, ChromaBridge, LOGITECH_KEY_MAP, load_preset, sav
 AUTOSTART_NAME = "G515 RGB Controller"
 AUTOSTART_CMD  = f'"{Path(sys.executable).parent / "pythonw.exe"}" "{Path(__file__).resolve()}"'
 
+# Dossier racine de l'app (absolu, fonctionne peu importe le dossier courant)
+APP_DIR     = Path(__file__).resolve().parent
+PRESETS_DIR = APP_DIR / "presets"
+PRESETS_DIR.mkdir(exist_ok=True)
+LAST_FILE   = PRESETS_DIR / ".last"
+
 # ── Layout clavier AZERTY G515 TKL ───────────────────────────────────────────
 
 ROW0 = [
@@ -483,7 +489,7 @@ class BridgeApp(tk.Tk):
 
     def _save_preset(self):
         path = filedialog.asksaveasfilename(
-            initialdir="presets", defaultextension=".json",
+            initialdir=str(PRESETS_DIR), defaultextension=".json",
             filetypes=[("JSON", "*.json")], title="Sauvegarder le preset"
         )
         if not path:
@@ -493,13 +499,13 @@ class BridgeApp(tk.Tk):
         data["__brightness__"] = self.brightness_var.get()
         with open(path, "w") as f:
             json.dump(data, f, indent=2)
-        Path("presets/.last").write_text(path)
+        LAST_FILE.write_text(path)
         self._set_status(f"Preset sauvegardé : {Path(path).name}")
 
     def _load_preset(self, path=None):
         if path is None:
             path = filedialog.askopenfilename(
-                initialdir="presets", filetypes=[("JSON", "*.json")],
+                initialdir=str(PRESETS_DIR), filetypes=[("JSON", "*.json")],
                 title="Charger un preset"
             )
         if not path or not Path(path).exists():
@@ -525,15 +531,14 @@ class BridgeApp(tk.Tk):
                 fg="#000" if luminance(br, bg_, bb) > 128 else "#fff"
             )
             self._apply_current()
-            Path("presets/.last").write_text(path)
+            LAST_FILE.write_text(path)
             self._set_status(f"Preset chargé : {Path(path).name}")
         except Exception as e:
             messagebox.showerror("Erreur", f"Impossible de charger le preset :\n{e}")
 
     def _load_last_preset(self):
-        last_file = Path("presets/.last")
-        if last_file.exists():
-            last = last_file.read_text().strip()
+        if LAST_FILE.exists():
+            last = LAST_FILE.read_text().strip()
             if last and Path(last).exists():
                 self._load_preset(last)
 
