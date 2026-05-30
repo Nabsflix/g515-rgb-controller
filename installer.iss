@@ -27,6 +27,7 @@ PrivilegesRequired=lowest
 PrivilegesRequiredOverridesAllowed=dialog
 ArchitecturesInstallIn64BitMode=x64compatible
 MinVersion=10.0
+SetupIconFile={#MyAppDir}\icon.ico
 
 [Languages]
 Name: "french"; MessagesFile: "compiler:Languages\French.isl"

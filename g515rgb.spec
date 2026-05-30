@@ -42,7 +42,7 @@ exe = EXE(
     upx=False,
     upx_exclude=[],
     runtime_tmpdir=None,
-    console=False,          # pas de fenêtre console
+    console=False,
     windowed=True,
-    icon=None,              # on génère l'icône dynamiquement dans le code
+    icon='D:\\App\\Razer\\icon.ico',
 )
