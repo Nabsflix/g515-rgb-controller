@@ -11,8 +11,11 @@ a = Analysis(
         ('sdk_legacy_led_x64.dll', '.'),
     ],
     hiddenimports=[
+        'pystray',
         'pystray._win32',
         'PIL._tkinter_finder',
+        'PIL.Image',
+        'PIL.ImageDraw',
     ],
     hookspath=[],
     runtime_hooks=[],
