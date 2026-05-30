@@ -5,4 +5,5 @@ presets/.last
 test_*.py
 build/
 dist/
-*.spec
+installer_output/
+sdk_legacy_led_x64.dll

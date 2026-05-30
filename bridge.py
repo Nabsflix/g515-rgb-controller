@@ -15,7 +15,25 @@ from pathlib import Path
 
 # ── Logitech LED SDK ──────────────────────────────────────────────────────────
 
-LOGI_SDK_DLL = r"C:\Program Files\LGHUB\sdks\sdk_legacy_led_x64.dll"
+def _find_sdk_dll() -> str:
+    """Cherche la DLL dans l'ordre : _MEIPASS (bundlé) → dossier exe → LGHUB."""
+    dll_name = "sdk_legacy_led_x64.dll"
+    # 1. Dans le bundle PyInstaller (dossier temporaire d'extraction)
+    meipass = getattr(sys, '_MEIPASS', None)
+    if meipass and (Path(meipass) / dll_name).exists():
+        return str(Path(meipass) / dll_name)
+    # 2. À côté de l'exe ou du script
+    if getattr(sys, 'frozen', False):
+        base = Path(sys.executable).parent
+    else:
+        base = Path(__file__).resolve().parent
+    local = base / dll_name
+    if local.exists():
+        return str(local)
+    # 3. Fallback : installation LGHUB standard
+    return r"C:\Program Files\LGHUB\sdks\sdk_legacy_led_x64.dll"
+
+LOGI_SDK_DLL = _find_sdk_dll()
 
 LOGI_DEVICETYPE_PERKEY_RGB = 0x4
 LOGI_DEVICETYPE_ALL        = 0x7
