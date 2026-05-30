@@ -192,7 +192,7 @@ class KeyButton(tk.Canvas):
 class BridgeApp(tk.Tk):
     def __init__(self):
         super().__init__()
-        self.title("G515 RGB — Logitech × Chroma")
+        self.title("RGB by Nabs")
         self.configure(bg=BG_COLOR)
         self.resizable(False, False)
 
@@ -211,6 +211,34 @@ class BridgeApp(tk.Tk):
         self._start_battery_poll()
         self.protocol("WM_DELETE_WINDOW", self._on_close)
 
+    # ── Icône fenêtre ────────────────────────────────────────────────────────
+
+    def _set_window_icon(self):
+        """Génère une icône style geek RGB (fond sombre, cercles R G B)."""
+        size = 32
+        img = Image.new("RGBA", (size, size), (0, 0, 0, 0))
+        d = ImageDraw.Draw(img)
+        # Fond arrondi noir
+        d.ellipse([0, 0, size - 1, size - 1], fill=(20, 20, 20, 255))
+        # Trois cercles RGB qui se chevauchent légèrement
+        r = 9
+        cx, cy = size // 2, size // 2
+        offsets = [(-6, 4), (6, 4), (0, -5)]
+        colors  = [(255, 50, 50, 180), (50, 255, 80, 180), (60, 120, 255, 180)]
+        for (ox, oy), col in zip(offsets, colors):
+            d.ellipse([cx + ox - r, cy + oy - r, cx + ox + r, cy + oy + r],
+                      fill=col)
+        photo = tk.PhotoImage(data=self._pil_to_png_b64(img))
+        self._icon_photo = photo          # garder une référence
+        self.iconphoto(True, photo)
+
+    @staticmethod
+    def _pil_to_png_b64(img):
+        import io, base64
+        buf = io.BytesIO()
+        img.save(buf, format="PNG")
+        return base64.b64encode(buf.getvalue()).decode()
+
     # ── SDK ───────────────────────────────────────────────────────────────────
 
     def _init_sdk(self):
@@ -223,13 +251,26 @@ class BridgeApp(tk.Tk):
     # ── UI ────────────────────────────────────────────────────────────────────
 
     def _build_ui(self):
+        # ── Icône fenêtre (logo geek) ──
+        self._set_window_icon()
+
         # ── Barre supérieure : titre + batterie ──
         top = tk.Frame(self, bg=BG_COLOR)
         top.pack(fill="x", padx=16, pady=(12, 2))
 
-        tk.Label(top, text="G515 RGB CONTROLLER",
+        # Logo geek + titre
+        header = tk.Frame(top, bg=BG_COLOR)
+        header.pack(side="left")
+        tk.Label(header, text="⌨", bg=BG_COLOR, fg=ACCENT,
+                 font=("Segoe UI", 18)).pack(side="left", padx=(0, 6))
+        titles = tk.Frame(header, bg=BG_COLOR)
+        titles.pack(side="left")
+        tk.Label(titles, text="RGB by Nabs",
                  bg=BG_COLOR, fg=ACCENT,
-                 font=("Segoe UI", 13, "bold")).pack(side="left")
+                 font=("Segoe UI", 13, "bold")).pack(anchor="w")
+        tk.Label(titles, text="G515 RGB CONTROLLER by Nabs",
+                 bg=BG_COLOR, fg="#888888",
+                 font=("Segoe UI", 8)).pack(anchor="w")
 
         batt_frame = tk.Frame(top, bg=BG_COLOR)
         batt_frame.pack(side="right")
