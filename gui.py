@@ -20,10 +20,17 @@ from PIL import Image, ImageDraw
 from bridge import LogitechLED, ChromaBridge, LOGITECH_KEY_MAP, load_preset, save_preset
 
 AUTOSTART_NAME = "G515 RGB Controller"
-AUTOSTART_CMD  = f'"{Path(sys.executable).parent / "pythonw.exe"}" "{Path(__file__).resolve()}"'
 
-# Dossier racine de l'app (absolu, fonctionne peu importe le dossier courant)
-APP_DIR     = Path(__file__).resolve().parent
+# Détection mode .exe (PyInstaller) ou script .py
+if getattr(sys, 'frozen', False):
+    # Lancé depuis un .exe PyInstaller
+    APP_DIR       = Path(sys.executable).resolve().parent
+    AUTOSTART_CMD = f'"{sys.executable}"'
+else:
+    APP_DIR       = Path(__file__).resolve().parent
+    AUTOSTART_CMD = f'"{Path(sys.executable).parent / "pythonw.exe"}" "{Path(__file__).resolve()}"'
+
+# Dossier presets à côté de l'exe (ou du script)
 PRESETS_DIR = APP_DIR / "presets"
 PRESETS_DIR.mkdir(exist_ok=True)
 LAST_FILE   = PRESETS_DIR / ".last"
